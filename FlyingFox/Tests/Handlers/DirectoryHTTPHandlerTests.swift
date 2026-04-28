@@ -73,6 +73,18 @@ struct DirectoryHTTPHandlerTests {
     }
 
     @Test
+    func directoryHandler_streamsBody_fromFile() async throws {
+        let handler = DirectoryHTTPHandler(bundle: .module, subPath: "Stubs", serverPath: "server/path")
+
+        let response = try await handler.handleRequest(.make(path: "server/path/fish.json"))
+        guard case .httpBody(let body) = response.payload else {
+            Issue.record("expected .httpBody payload")
+            return
+        }
+        #expect(body.storage.sequence is AsyncBufferedFileSequence)
+    }
+
+    @Test
     func directoryHandler_Returns404WhenFileDoesNotExist() async throws {
         let handler = DirectoryHTTPHandler.directory(for: .module, subPath: "Stubs", serverPath: "server/path")
 
