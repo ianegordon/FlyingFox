@@ -75,7 +75,7 @@ public struct DirectoryHTTPHandler: HTTPHandler {
             }
         }
 
-        if let eTagValue = HTTPCacheControl.getETagValue(for: data) {
+        if let eTagValue = HTTPCacheControl.getETagValue(for: filePath) {
             headers[.eTag] = eTagValue
             if let ifNoneMatch = request.headers[.ifNoneMatch], eTagValue == ifNoneMatch {
                 return HTTPResponse(statusCode: .notModified,

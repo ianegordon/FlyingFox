@@ -6,9 +6,6 @@
 //
 
 import Foundation
-#if canImport(CryptoKit)
-import CryptoKit
-#endif
 
 public enum HTTPCacheControl {
     public enum ResponseDirective: Sendable, CustomStringConvertible {
@@ -88,14 +85,25 @@ public enum HTTPCacheControl {
         return nil
     }
 
-    static func getETagValue(for data: Data) -> String? {
-#if canImport(CryptoKit)
-        let sha256digest = SHA256.hash(data: data)
-        let eTag = "\"\(sha256digest.map { String(format: "%02x", $0) }.joined())\""
-        return eTag
-#else
-        return nil
-#endif
+    // Strong ETag derived from (mtime, size), matching the format used by
+    // nginx (`"%xT-%xO"`, see ngx_http_set_etag in src/http/ngx_http_core_module.c)
+    // and Apache HTTPD's default `FileETag MTime Size`. Cheap to compute and
+    // does not require reading file contents.
+    static func getETagValue(for filePath: URL) -> String? {
+        let path = {
+            if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
+                return filePath.path()
+            } else {
+                return filePath.path
+            }
+        }()
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
+              let modificationDate = attributes[.modificationDate] as? Date,
+              let size = attributes[.size] as? UInt64 else {
+            return nil
+        }
+        let mtime = Int64(modificationDate.timeIntervalSince1970)
+        return String(format: "\"%llx-%llx\"", mtime, size)
     }
 }
 
