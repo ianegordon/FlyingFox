@@ -142,8 +142,7 @@ public struct FileHTTPHandler: HTTPHandler {
                 }
             }
 
-            if let data = try? Data(contentsOf: path),
-                let eTagValue = HTTPCacheControl.getETagValue(for: data) {
+            if let eTagValue = HTTPCacheControl.getETagValue(for: path) {
                 headers[.eTag] = eTagValue
                 if let ifNoneMatch = request.headers[.ifNoneMatch], eTagValue == ifNoneMatch {
                     return HTTPResponse(statusCode: .notModified,
